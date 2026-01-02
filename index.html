@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>福岡紫藤之旅 2026</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 日系極簡湖水綠樣式 */
+        :root {
+            --primary: #4EA1A1;
+            --primary-dark: #3B7A7A;
+            --bg: #F8FAFA;
+            --card-bg: #ffffff;
+            --text: #334E4E;
+            --gray: #94A3B8;
+            --error: #FF7E7E;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, "Noto Sans TC", sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding-bottom: 100px; }
+        [v-cloak] { display: none !important; }
+        
+        /* Header */
+        header { background: linear-gradient(135deg, #4EA1A1 0%, #3B7A7A 100%); color: white; padding: 25px 20px; border-radius: 0 0 30px 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .date-scroller { display: flex; overflow-x: auto; gap: 12px; padding: 10px 0; scrollbar-width: none; }
+        .date-scroller::-webkit-scrollbar { display: none; }
+        .date-item { min-width: 65px; height: 85px; background: rgba(255,255,255,0.2); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
+        .date-item.active { background: white; color: var(--primary); transform: scale(1.05); font-weight: bold; }
+
+        /* Tabs */
+        .tabs { display: flex; background: white; margin: 20px; border-radius: 50px; padding: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .tab-btn { flex: 1; border: none; background: none; padding: 10px; border-radius: 50px; font-weight: bold; color: var(--gray); cursor: pointer; transition: 0.3s; }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        /* Content */
+        .container { padding: 0 20px; }
+        .weather-card { background: #E6F2F2; padding: 15px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border: 1px solid #D1E5E5; }
+        .event-card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid #F1F5F9; position: relative; }
+        .event-time { font-size: 12px; background: #F0F7F7; color: var(--primary); padding: 4px 10px; border-radius: 8px; font-weight: bold; }
+        .event-title { font-size: 18px; font-weight: bold; margin: 10px 0 5px 0; }
+        .event-desc { font-size: 14px; color: #64748B; line-height: 1.5; }
+
+        /* Split Page & Inputs */
+        .input-group { background: white; padding: 20px; border-radius: 20px; margin-bottom: 15px; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #E2E8F0; border-radius: 10px; outline: none; font-size: 16px; }
+        input:focus, select:focus { border-color: var(--primary); }
+        button.primary { width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 16px; }
+        
+        /* Split Type Toggle */
+        .split-type-toggle { display: flex; gap: 10px; margin-bottom: 15px; background: #F1F5F9; padding: 5px; border-radius: 10px; }
+        .toggle-option { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 8px; color: var(--gray); font-weight: bold; transition: 0.3s; }
+        .toggle-option.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        
+        /* Manual Split Inputs */
+        .manual-split-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .manual-split-item label { flex: 1; font-weight: bold; }
+        .manual-split-item input { width: 60%; margin-bottom: 0; text-align: right; }
+        .split-summary { text-align: right; font-size: 14px; color: var(--gray); margin-bottom: 10px; }
+        .split-summary.error { color: var(--error); font-weight: bold; }
+
+        /* Footer */
+        .footer-info { position: fixed; bottom: 20px; left: 20px; right: 20px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); padding: 15px 20px; border-radius: 20px; display: flex; justify-content: space-between; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid white; }
+    </style>
+</head>
+<body>
+
+<div id="app" v-cloak>
+    <header>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div>
+                <h1 style="margin: 0; font-size: 24px;">福岡・紫藤時光</h1>
+                <small style="opacity: 0.8;">Fukuoka Journey 2026</small>
+            </div>
+            <i class="fa-solid fa-cloud-sun text-3xl"></i>
+        </div>
+        
+        <div class="date-scroller">
+            <div v-for="(day, index) in itinerary" 
+                 :class="['date-item', currentDay === index ? 'active' : '']"
+                 @click="currentDay = index">
+                <span style="font-size: 10px;">DAY</span>
+                <span style="font-size: 20px; font-weight: bold;">{{ index + 1 }}</span>
+                <span style="font-size: 10px;">{{ day.dateShort }}</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="tabs">
+        <button v-for="t in ['PLAN', 'SPLIT', 'LIST']" 
+                @click="activeTab = t" 
+                :class="['tab-btn', activeTab === t ? 'active' : '']">
+            {{ t === 'PLAN' ? '行程' : (t === 'SPLIT' ? '分帳' : '清單') }}
+        </button>
+    </div>
+
+    <main class="container">
+        <div v-if="activeTab === 'PLAN'">
+            <div class="weather-card">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i :class="['fa-solid', itinerary[currentDay].weatherIcon]" style="font-size: 24px; color: var(--primary);"></i>
+                    <div>
+                        <div style="font-size: 10px; font-weight: bold; color: var(--primary-dark);">預測氣溫</div>
+                        <div style="font-size: 18px; font-weight: bold;">{{ itinerary[currentDay].temp }}</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 10px; color: var(--primary);">LOCATION</div>
+                    <div style="font-size: 14px; font-weight: bold;">{{ itinerary[currentDay].location }}</div>
+                </div>
+            </div>
+
+            <div v-for="(event, i) in itinerary[currentDay].events" class="event-card">
+                <span class="event-time">{{ event.time }}</span>
+                <div class="event-title">{{ event.title }}</div>
+                <div class="event-desc">{{ event.desc }}</div>
+                <div style="margin-top: 15px;">
+                    <a :href="'https://www.google.com/maps/search/' + event.title" target="_blank" style="text-decoration: none; color: var(--primary); font-size: 12px; font-weight: bold;">
+                        <i class="fa-solid fa-location-arrow"></i> 開啟地圖導覽
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="activeTab === 'SPLIT'">
+            <div class="input-group">
+                <h3 style="margin-top: 0;">新增帳款</h3>
+                
+                <div class="split-type-toggle">
+                    <div :class="['toggle-option', bill.splitType === 'equal' ? 'active' : '']" 
+                         @click="bill.splitType = 'equal'">平均分攤</div>
+                    <div :class="['toggle-option', bill.splitType === 'manual' ? 'active' : '']" 
+                         @click="bill.splitType = 'manual'">自定義金額</div>
+                </div>
+
+                <label style="font-size: 12px; color: var(--gray); font-weight: bold;">總金額 (JPY)</label>
+                <input v-model.number="bill.amount" type="number" placeholder="輸入總金額" inputmode="numeric">
+                
+                <label style="font-size: 12px; color: var(--gray); font-weight: bold;">先代墊付款人</label>
+                <select v-model="bill.payer">
+                    <option v-for="m in members" :value="m">{{ m }}</option>
+                </select>
+
+                <div v-if="bill.splitType === 'manual'" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 14px;">輸入每人應付金額：</h4>
+                    <div v-for="m in members" class="manual-split-item">
+                        <label>{{ m }}</label>
+                        <input v-model.number="bill.manualShares[m]" type="number" placeholder="0" inputmode="numeric">
+                    </div>
+                    <div :class="['split-summary', (bill.amount && totalManualShare !== bill.amount) ? 'error' : '']">
+                        已分配: ¥{{ totalManualShare.toLocaleString() }} 
+                        <span v-if="bill.amount && (bill.amount - totalManualShare !== 0)">
+                            (差額: {{ (bill.amount - totalManualShare).toLocaleString() }})
+                        </span>
+                    </div>
+                </div>
+                
+                <button class="primary" @click="addBill" style="margin-top: 10px;">加入紀錄</button>
+            </div>
+
+            <div class="input-group">
+                <div style="display: flex; justify-content: space-between;">
+                    <h3 style="margin: 0;">結算結果</h3>
+                    <button @click="clearBills" style="background: none; border: 1px solid #FFD1D1; color: #FF7E7E; font-size: 10px; padding: 2px 8px; border-radius: 5px;">清除所有</button>
+                </div>
+                <div style="font-size: 12px; color: var(--gray); margin-bottom: 10px;">(正數=應收回, 負數=應支付)</div>
+                <div v-for="(balance, name) in settlement" style="display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #F1F5F9;">
+                    <span style="font-weight: bold;">{{ name }}</span>
+                    <span :style="{ color: balance >= 0 ? '#4EA1A1' : '#FF7E7E', fontWeight: 'bold', fontSize: '18px' }">
+                        {{ balance >= 0 ? '+' : '' }}{{ Math.round(balance).toLocaleString() }}
+                    </span>
+                </div>
+            </div>
+             <div v-if="bills.length > 0" class="input-group" style="background: #F8FAFA; border: none;">
+                <h4 style="margin: 0 0 10px 0; opacity: 0.7;">最近紀錄 ({{ bills.length }}筆)</h4>
+                <div v-for="(b, index) in bills.slice().reverse().slice(0, 3)" style="font-size: 12px; padding: 8px 0; border-bottom: 1px dashed #ddd; display: flex; justify-content: space-between;">
+                    <div>
+                        <span style="font-weight: bold; color: var(--primary);">{{ b.payer }}</span> 代墊
+                        <span style="background: #eee; padding: 2px 5px; border-radius: 4px; margin-left: 5px;">
+                            {{ b.splitType === 'equal' ? '平均' : '自定義' }}
+                        </span>
+                    </div>
+                    <div style="font-weight: bold;">¥{{ b.amount.toLocaleString() }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="activeTab === 'LIST'">
+            <div class="input-group">
+                <h3>必備清單</h3>
+                <div v-for="item in checklist" style="display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #F1F5F9;">
+                    <input type="checkbox" v-model="item.done" style="width: 24px; height: 24px; margin: 0; accent-color: var(--primary);">
+                    <span :style="{ textDecoration: item.done ? 'line-through' : 'none', color: item.done ? '#CBD5E1' : 'inherit', fontSize: '16px' }">{{ item.text }}</span>
+                </div>
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <input v-model="newItemText" type="text" placeholder="新增清單項目..." style="margin-bottom: 0;">
+                    <button @click="addItem" style="background: var(--primary); color: white; border: none; padding: 0 20px; border-radius: 10px; font-weight: bold;">+</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="footer-info">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-plane" style="color: var(--primary);"></i>
+            <div style="font-size: 10px;">
+                <div style="color: var(--gray);">FLIGHT</div>
+                <div style="font-weight: bold;">{{ currentDay < 5 ? 'CI0128 | 14:40' : 'CI0129 | 19:10' }}</div>
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 10px; color: var(--gray);">TODAY</div>
+            <div style="font-weight: bold; color: var(--primary);">{{ itinerary[currentDay].dateShort }}</div>
+        </div>
+    </div>
+</div>
+
+<div id="fallback" style="padding: 50px; text-align: center; color: #666;">
+    正在載入福岡行程表...<br>如果長時間沒畫面，請確認網路是否正常。
+</div>
+
+<script>
+    // 檢查 Vue 是否載入
+    window.onload = function() {
+        document.getElementById('fallback').style.display = 'none';
+        
+        const { createApp, ref, computed, watch, reactive } = Vue;
+
+        createApp({
+            setup() {
+                const activeTab = ref('PLAN');
+                const currentDay = ref(0);
+                const members = ['VICKY', 'LYDIA', '大哥', '大姐'];
+                const newItemText = ref('');
+
+                // 初始化 bill 狀態，包含新的 splitType 和 manualShares
+                const initBillState = () => ({
+                    amount: null,
+                    payer: 'VICKY',
+                    splitType: 'equal', // 'equal' or 'manual'
+                    manualShares: members.reduce((acc, m) => ({ ...acc, [m]: null }), {})
+                });
+
+                const bill = ref(initBillState());
+
+                const defaultItinerary = [
+                    { dateShort: '4/23', location: '福岡', temp: '16°~22°', weatherIcon: 'fa-cloud-sun', events: [{ time: '14:40', title: '桃園機場', desc: 'CI0128 第2航廈'}, { time: '18:05', title: '抵達福岡', desc: '前往博多東急REI酒店'}, { time: '20:00', title: '中洲屋台', desc: '一蘭拉麵、屋台街美食'}] },
+                    { dateShort: '4/24', location: '北九州', temp: '15°~21°', weatherIcon: 'fa-sun', events: [{ time: '09:00', title: '取車出發', desc: '自駕之旅開始'}, { time: '10:30', title: '河內藤園', desc: '賞紫藤花隧道'}, { time: '18:00', title: '門司港', desc: '燒咖哩晚餐'}] },
+                    { dateShort: '4/25', location: '由布院', temp: '12°~19°', weatherIcon: 'fa-cloud', events: [{ time: '11:00', title: '金鱗湖', desc: '由布院散策'}, { time: '18:00', title: '牧場之家', desc: '溫泉飯店一泊二食'}] },
+                    { dateShort: '4/26', location: '柳川', temp: '14°~22°', weatherIcon: 'fa-sun', events: [{ time: '10:00', title: '柳川遊船', desc: '體驗水鄉'}, { time: '15:00', title: '平井農園', desc: '採甘王草莓'}] },
+                    { dateShort: '4/27', location: '福岡', temp: '16°~23°', weatherIcon: 'fa-cloud-sun', events: [{ time: '09:00', title: '中山大藤', desc: '三百年大藤'}, { time: '15:00', title: '博多還車', desc: '運河城購物'}] },
+                    { dateShort: '4/28', location: '返台', temp: '17°~24°', weatherIcon: 'fa-plane-departure', events: [{ time: '10:00', title: '天神地下街', desc: '最後採買'}, { time: '19:10', title: '回程班機', desc: 'CI0129'}] }
+                ];
+
+                const itinerary = ref(JSON.parse(localStorage.getItem('fuk_itinerary_v3')) || defaultItinerary);
+                const checklist = ref(JSON.parse(localStorage.getItem('fuk_list_v3')) || [
+                    { text: '護照', done: false }, { text: '日文譯本駕照', done: false }, { text: '日本SIM卡', done: false }, { text: '日幣現金', done: false }
+                ]);
+                // 注意：這裡 key 改成 v3 以免跟舊資料衝突
+                const bills = ref(JSON.parse(localStorage.getItem('fuk_bills_v3')) || []);
+
+                // 計算目前自定義輸入的總和
+                const totalManualShare = computed(() => {
+                    return Object.values(bill.value.manualShares).reduce((sum, val) => sum + (val || 0), 0);
+                });
+
+                // 核心結算邏輯 (修改過)
+                const settlement = computed(() => {
+                    // 初始化所有人的餘額為 0
+                    const balances = members.reduce((acc, m) => ({ ...acc, [m]: 0 }), {});
+
+                    bills.value.forEach(b => {
+                        const totalAmount = b.amount || 0;
+                        const payer = b.payer;
+
+                        // 1. 先將代墊人的餘額加上總金額 (他付出了錢)
+                        balances[payer] += totalAmount;
+
+                        // 2. 根據分帳類型，扣除每個人應付的份額
+                        if (b.splitType === 'manual') {
+                            // 自定義模式：扣除各自設定的金額
+                            members.forEach(m => {
+                                balances[m] -= (b.manualShares[m] || 0);
+                            });
+                        } else {
+                            // 平均模式 (預設)：扣除平均值
+                            const share = totalAmount / members.length;
+                            members.forEach(m => {
+                                balances[m] -= share;
+                            });
+                        }
+                    });
+                    return balances;
+                });
+
+                const addBill = () => {
+                    if (!bill.value.amount || bill.value.amount <= 0) {
+                        alert("請輸入有效的總金額");
+                        return;
+                    }
+
+                    // 自定義模式的驗證：檢查分配總和是否等於總金額
+                    if (bill.value.splitType === 'manual') {
+                        if (totalManualShare.value !== bill.value.amount) {
+                            alert(`金額分配不正確！\n總金額: ¥${bill.value.amount}\n目前分配: ¥${totalManualShare.value}\n差額: ¥${bill.value.amount - totalManualShare.value}`);
+                            return;
+                        }
+                    }
+
+                    // 深拷貝目前的 bill 狀態並存入陣列
+                    bills.value.push(JSON.parse(JSON.stringify(bill.value)));
+                    // 重置輸入表單
+                    bill.value = initBillState();
+                };
+
+                const clearBills = () => { if(confirm("確定清除所有帳款紀錄？無法復原喔！")) bills.value = []; };
+                
+                const addItem = () => {
+                    if(!newItemText.value) return;
+                    checklist.value.push({ text: newItemText.value, done: false });
+                    newItemText.value = '';
+                };
+
+                // 儲存資料到 LocalStorage (使用 v3 key)
+                watch([itinerary, checklist, bills], () => {
+                    localStorage.setItem('fuk_itinerary_v3', JSON.stringify(itinerary.value));
+                    localStorage.setItem('fuk_list_v3', JSON.stringify(checklist.value));
+                    localStorage.setItem('fuk_bills_v3', JSON.stringify(bills.value));
+                }, { deep: true });
+
+                return { activeTab, currentDay, itinerary, checklist, members, bill, bills, settlement, addBill, clearBills, totalManualShare, newItemText, addItem };
+            }
+        }).mount('#app');
+    };
+</script>
+
+</body>
+</html>
